@@ -6,7 +6,7 @@
 
 ```sh
 
-mysql -u root -p -h mysql_host < init.sql
+mysql -u root -p -h mysql_address < init.sql
 
 ```
 
