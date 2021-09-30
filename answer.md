@@ -155,36 +155,239 @@ WHERE ADMIN_ENTERED iS NULL
 ## 20. แสดงอายุเฉลี่ยเมื่อเสียชีวิตของประธานาธิบดีจากพรรครีพับลิกันที่เกิดหลังปีคศ.1850
 
 ```sql
-
+SELECT AVG(DEATH_AGE) 
+FROM PRESIDENT
+WHERE PARTY = 'Republican' AND BIRTH_YR > '1850'
 ```
 
 ## 21. แสดงจํานวนครั้งทั้งหมดของการแต่งงานของประธานาธิบดี
+
+```sql
+SELECT COUNT(*) 
+FROM PRES_MARRIAGE 
+```
+
 ## 22. แสดงจํานวนมีประธานาธิบดีกี่คนที่ยังมีชีวิตอยู่ในปี 1985
+
+```sql
+SELECT COUNT(*) 
+FROM PRESIDENT 
+WHERE ( BIRTH_YR + DEATH_AGE ) >= 1985 OR DEATH_AGE IS NULL
+```
+
 ## 23. แสดงจํานวนสมัยการปกครองของประเทศสหรัฐอเมริกา
+
+```sql
+SELECT MAX(ADMIN_NR) 
+FROM ADMINISTRATION 
+```
+
 ## 24. แสดงว่ามีประธานาธิบดีมาแล้วกี่คน (โดยใช้ตาราง ADMINISTRATION เพื่อตอบคําถาม)
+
+```sql
+SELECT COUNT(DISTINCT PRES_NAME)
+FROM ADMINISTRATION 
+```
+
 ## 25. แสดงอายุของภรรยาประธานาธิบดีที่ขณะแต่งงานมีอายุน้อยที่สุด มีอายุเท่าไหร่ในขณะนั้น
+
+```sql
+SELECT MIN(SP_AGE)
+FROM PRES_MARRIAGE
+```
+
 ## 26. แสดงจํานวนบุตรของประธานาธิบดีที่แต่งงานกับภรรยาอายุน้อยกว่า 20 ปี
+
+```sql
+SELECT SUM(NR_CHILDREN)
+FROM PRES_MARRIAGE 
+WHERE SP_AGE < 20
+```
+
 ## 27. แสดงจํานวนเฉลี่ยของผลต่างระหว่างอายุประธานาธิบดีและภรรยา
+
+```sql
+SELECT AVG( ABS(PR_AGE - SP_AGE ) )
+FROM PRES_MARRIAGE
+```
+
 ## 28. แสดงจํานวนของประธานาธิบดีที่ขณะแต่งงานมีอายุมากกว่าภรรยา 2 ปี
+
+```sql
+SELECT COUNT(*)
+FROM PRES_MARRIAGE
+WHERE PR_AGE - SP_AGE = 2
+```
+
 ## 29. แสดงอัตราส่วนเฉลี่ยของอายุประธานาธิบดีและอายุภรรยาขณะแต่งงาน
+
+```sql
+SELECT AVG(PR_AGE / SP_AGE) 
+FROM PRES_MARRIAGE
+```
+
 ## 30. แสดงรายละเอียดการสมรสของประธานาธิบดีที่มีอายุน้อยกว่าภรรยาไม่เกิน 2 ปี
+
+```sql
+SELECT *
+FROM PRES_MARRIAGE
+WHERE SP_AGE - PR_AGE <= 2 AND  SP_AGE > PR_AGE
+```
+
 ## 31. หาค่าสูงสุดต่ำสุดและอัตราส่วนระหว่างจํานวนปีที่อยู่ในตําแหน่งกับอายุเมื่อถึงแก่อสัญกรรมโดยคิดเป็นเปอร์เซ็นต์เฉพาะประธานาธิบดีถึงอสัญกรรมแล้ว
+
+```sql
+SELECT MIN(YRS_SERV),  MAX(YRS_SERV), ( SUM(YRS_SERV) * 100 / SUM(DEATH_AGE) )
+FROM PRESIDENT
+WHERE DEATH_AGE IS NOT NULL
+```
+
 ## 32. แสดงจํานวนผู้สมัครรับเลือกตั้งภายหลังปี 1900 เรียงลําดับจากปีล่าสุด
+
+```sql
+SELECT ELECTION_YEAR, COUNT(*)
+FROM ELECTION 
+WHERE ELECTION_YEAR > 1900
+GROUP BY ELECTION_YEAR
+ORDER BY ELECTION_YEAR DESC
+```
+
 ## 33. แสดงจํานวนผู้สมัครรับเลือกตั้งภายหลังปี 1989 เรียงลําดับตามปีการเลือกตั้ง
+
+```sql
+SELECT ELECTION_YEAR, COUNT(*)
+FROM ELECTION 
+WHERE ELECTION_YEAR > 1989
+GROUP BY ELECTION_YEAR
+ORDER BY ELECTION_YEAR 
+```
+
 ## 34. แสดงรายละเอียดของประธานาธิบดีคนใดที่การแต่งงานครั้งที่สองที่เป็นครั้งสุดท้ายอายุมากกว่าการแต่งงานครั้งแรกสองเท่า
+
+```sql
+-- มันไม่ได้ 2 เท่าพอดี เลยใช้ FLOOR เพื่อเอา 2 เท่ากว่าๆออกมา
+
+SELECT *
+FROM PRESIDENT T1
+WHERE T1.PRES_NAME IN (
+	SELECT T2.PRES_NAME -- , MAX(T2.PR_AGE),MIN(T2.PR_AGE), FLOOR(MAX(PR_AGE) / MIN(PR_AGE)) 
+    FROM PRES_MARRIAGE AS T2
+    GROUP BY T2.PRES_NAME
+    HAVING COUNT(*) = 2  AND FLOOR(MAX(PR_AGE) / MIN(PR_AGE)) = 2
+)
+```
+
 ## 35. หลังจากปี 1870 การเลือกตั้งครั้งใดที่มีผู้สมัครรับเลือกตั้งมากกว่า 2 คน
+
+```sql
+SELECT ELECTION_YEAR 
+FROM ELECTION 
+WHERE ELECTION_YEAR > 1870
+GROUP BY ELECTION_YEAR
+HAVING COUNT(*) > 2
+```
+
 ## 36. แสดงอายุเฉลี่ยของประธานาธิบดีที่มีการแต่งงานและอายุเฉลี่ยของภรรยา
+
+```sql
+
+```
+
 ## 37. แสดงจํานวนบุตรเฉลี่ยของประธานาธิบดี
+
+```sql
+
+```
+
 ## 38. แสดงรายชื่อประธานาธิบดีและจํานวนบุตรรวมของประธานาธิบดีที่เคยมีการแต่งงานอย่างน้อย 1 ครั้งที่อายุไม่เกิน 20 ปี
+
+```sql
+SELECT PRES_NAME, SUM(NR_CHILDREN)
+FROM PRES_MARRIAGE 
+GROUP BY PRES_NAME
+HAVING MIN(PR_AGE) < 20
+```
+
 ## 39. แสดงรายชื่อประธานาธิบดีและจํานวนบุตรรวม สําหรับผู้ที่มีการแต่งงานครั้งแรกภายหลังอายุ 35 ปี
-## 40. แสดงรายชื่อประธานาธิบดที่านใดบ้างที่ไม่มีบุตรในครั้งใดครั้งหนึ่งของการแต่งงาน
+
+```sql
+SELECT PRES_NAME, SUM(NR_CHILDREN)
+FROM PRES_MARRIAGE 
+GROUP BY PRES_NAME
+HAVING MIN(PR_AGE) > 35
+```
+
+## 40. แสดงรายชื่อประธานาธิบดีท่านใดบ้างที่ไม่มีบุตรในครั้งใดครั้งหนึ่งของการแต่งงาน
+
+```sql
+SELECT PRES_NAME
+FROM PRES_MARRIAGE 
+GROUP BY PRES_NAME
+HAVING MIN(NR_CHILDREN) = 0
+
+------------------------- อันไหนก็ได้
+
+SELECT DISTINCT PRES_NAME 
+FROM PRES_MARRIAGE 
+WHERE NR_CHILDREN = 0
+
+```
+
 ## 41. แสดงรายชื่อประธานาธิบดีที่แต่งงานมากกว่า 1 ครั้งและในการแต่งงานแต่ละครั้งมีบุตรอย่างน้อย 2 คน
+
+```sql
+SELECT PRES_NAME
+FROM PRES_MARRIAGE 
+WHERE NR_CHILDREN >= 2
+GROUP BY PRES_NAME
+HAVING COUNT(*) > 1
+```
+
 ## 42. แสดงรายชื่อประธานาธิบดีและภรรยาสําหรับการสมรสที่มีบุตรมากกว่า 5 คน
+
+```sql
+SELECT PRES_NAME , SPOUSE_NAME
+FROM PRES_MARRIAGE 
+WHERE NR_CHILDREN >= 5
+```
+
 ## 43. จงเขียนคําสั่ง SQL ที่ให้ผลลัพธ์เหมือนกับคําสั่งนี้แต่ไม่ใช้ GROUP BY CAUSE (จงแสดงรายชื่อพรรคโดยไม่ใช้คําสั่ง GROUP BY)
+
+```sql
+SELECT DISTINCT PARTY
+FROM PRESIDENT
+```
+
 ## 44. แสดงรายชื่อพรรคการเมืองที่มีประธานาธิบดีมากกว่า 7 คน หลังปี 1850
+
+```sql
+SELECT PRESIDENT.PARTY
+FROM ADMINISTRATION 
+INNER JOIN PRESIDENT
+ON ADMINISTRATION.PRES_NAME = PRESIDENT.PRES_NAME
+WHERE ADMINISTRATION.YEAR_INAUGURATED > 1850
+GROUP BY PRESIDENT.PARTY
+HAVING COUNT(*) > 7
+```
+
 ## 45. แสดงรายชื่อของรัฐใดบ้างที่เป็นสถานที่เกิดของประธานาธิบดีมากกว่า 1 คนตั้งแต่ปี 1880
+
+```sql
+
+```
+
 ## 46. จงแสดงอายุที่มากที่สุดเมื่อถึงแก่อสัญกรรมของประธานาธิบดีของพรรคการเมืองแต่ละพรรค
+
+```sql
+
+```
+
 ## 47. จงจัดกลุ่ม (ช่วงอายุ) ของอายุประธานาธิบดีเมื่อถึงอสัญกรรมและนับจํานวนประธานาธิบดีที่ถึงอสัญกรรมของกลุ่มอายุนั้น
+
+```sql
+
+```
+
 ## 48. จงแสดงรายชื่อพรรคเพื่อแสดงอายุเมื่อถึงอสัญกรรมมากที่สุดและน้อยที่สุดของประธานาธิบดีพรรคนั้น โดยที่อายุที่ถึงอสัญกรรมที่มากสุดต้องมากกว่าเป็นจํานวนอย่างน้อย 20 % ของอายุที่น้อยที่สุด
 ## 49. แสดงจํานวนประธานาธิบดีอายุเมื่อถึงอสัญกรรมโดยเฉลี่ยจํานวนปีที่เป็นประธานาธิบดีที่มากที่สุดและน้อยที่สุดของแต่ละรัฐที่เป็นที่เกิดของประธานาธิบดี
 ## 50. แสดงรายชื่อของรองประธานาธิบดีที่ทํางานกับประธานาธิบดีมากกว่า 1 คน
