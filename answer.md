@@ -2,6 +2,8 @@
 
 Query ที่เฉลยนี้เป็น Query รูปแบบนึงที่ทำให้ได้ผลลัพธ์ตามที่โจทย์ต้องการ ซึ่งอาจมี Query อื่นที่สามารถใช้หาผลลัพธ์แบบเดียวกันได้ ดังนั้นหากได้ Query ไม่เหมือนกับที่เฉลยก็ไม่ต้องแปลกใจ
 
+ปล. ถ้ามีผิดก็คือผมเขียนผิดนะครับ เพราะอาจตีโจทย์ไม่เหมือนกัน หรือผมเบลอตอนทำแต่ล่ะข้อ
+
 ## 1. แสดงรายชื่อประธานาธิบดีและอายุเมื่อถึงแก่อสัญกรรม โดยเรียงตามอายุ
 
 ```sql
@@ -141,7 +143,13 @@ FROM ELECTION
 ## 18. แสดงจํานวนผู้ที่แพ้ในการเลือกตั้ง (แสดงรายการที่ผู้สมัครไม่เคยชนะการเลือกตั้งเลย)
 
 ```sql
-
+SELECT DISTINCT T1.CANDIDATE
+FROM ELECTION AS T1
+WHERE NOT EXISTS (
+  SELECT *
+  FROM ELECTION AS T2
+  WHERE T2.CANDIDATE = T1.CANDIDATE AND T2.WINNER_LOSER_INDIC = 'W'
+)
 ```
 
 ## 19. แสดงจํานวนรัฐที่เริ่มก่อตั้งประเทศสหรัฐอเมริกา
@@ -290,13 +298,20 @@ HAVING COUNT(*) > 2
 ## 36. แสดงอายุเฉลี่ยของประธานาธิบดีที่มีการแต่งงานและอายุเฉลี่ยของภรรยา
 
 ```sql
-
+SELECT AVG(T1.DEATH_AGE) , (SELECT AVG(PRES_MARRIAGE.SP_AGE) FROM PRES_MARRIAGE ) AS AVG_SP_AGE
+FROM PRESIDENT AS T1
+WHERE EXISTS (
+	SELECT *
+  	FROM PRES_MARRIAGE AS T2
+  	WHERE T1.PRES_NAME = T2.PRES_NAME
+)
 ```
 
 ## 37. แสดงจํานวนบุตรเฉลี่ยของประธานาธิบดี
 
 ```sql
-
+SELECT SUM(PRES_MARRIAGE.NR_CHILDREN) / ( SELECT COUNT (DISTINCT PRES_NAME) FROM PRES_MARRIAGE )
+FROM PRES_MARRIAGE 
 ```
 
 ## 38. แสดงรายชื่อประธานาธิบดีและจํานวนบุตรรวมของประธานาธิบดีที่เคยมีการแต่งงานอย่างน้อย 1 ครั้งที่อายุไม่เกิน 20 ปี
@@ -399,11 +414,18 @@ GROUP BY DEATH_AGE
 ## 48. จงแสดงรายชื่อพรรคเพื่อแสดงอายุเมื่อถึงอสัญกรรมมากที่สุดและน้อยที่สุดของประธานาธิบดีพรรคนั้น โดยที่อายุที่ถึงอสัญกรรมที่มากสุดต้องมากกว่าเป็นจํานวนอย่างน้อย 20 % ของอายุที่น้อยที่สุด
 
 ```sql
+SELECT PRESIDENT.PARTY, MAX(PRESIDENT.DEATH_AGE) , MIN (PRESIDENT.DEATH_AGE)
+FROM PRESIDENT 
+GROUP BY PRESIDENT.PARTY
+HAVING (MAX(PRESIDENT.DEATH_AGE) - MIN (PRESIDENT.DEATH_AGE)) > ( MIN(PRESIDENT.DEATH_AGE) *20 / 100 )
 ```
 
-## 49. แสดงจํานวนประธานาธิบดีอายุเมื่อถึงอสัญกรรมโดยเฉลี่ยจํานวนปีที่เป็นประธานาธิบดีที่มากที่สุดและน้อยที่สุดของแต่ละรัฐที่เป็นที่เกิดของประธานาธิบดี
+## 49. แสดงจํานวนประธานาธิบดี อายุเมื่อถึงอสัญกรรมโดยเฉลี่ย จํานวนปีที่เป็นประธานาธิบดีที่มากที่สุดและน้อยที่สุดของแต่ละรัฐที่เป็นที่เกิดของประธานาธิบดี
 
 ```sql
+SELECT PRESIDENT.STATE_BORN, AVG(PRESIDENT.DEATH_AGE), MAX(PRESIDENT.YRS_SERV), MIN(PRESIDENT.YRS_SERV)
+FROM PRESIDENT
+GROUP BY PRESIDENT.STATE_BORN
 ```
 
 ## 50. แสดงรายชื่อของรองประธานาธิบดีที่ทํางานกับประธานาธิบดีมากกว่า 1 คน
@@ -479,6 +501,12 @@ WHERE YEAR_ENTERED = 1976
 ## 58. แสดงจํานวนเฉลี่ยงานอดิเรกของประธานาธิบดี
 
 ```sql
+SELECT AVG(SUM_HOBBY)
+FROM (
+  SELECT  PRES_HOBBY.PRES_NAME, COUNT(*) AS SUM_HOBBY
+  FROM PRES_HOBBY
+  GROUP BY PRES_HOBBY.PRES_NAME
+) AS MAIN
 ```
 
 ## 59. แสดงรายชื่อของประธานาธิบดีคนใดที่มีบุตรรวมมากกว่า 2 คน
@@ -515,6 +543,12 @@ WHERE T1.YRS_SERV > 4 AND EXISTS (
 ## 62. แสดงคะแนนเสียงเฉลี่ยในปีที่ชนะการเลือกตั้งจํานวนปีที่ดํารงตําแหน่งของประธานาธิบดีแต่ละท่าน
 
 ```sql
+SELECT PRESIDENT.PRES_NAME, PRESIDENT.YRS_SERV, AVG(ELECTION.VOTES) 
+FROM PRESIDENT
+INNER JOIN ELECTION
+ON PRESIDENT.PRES_NAME = ELECTION.CANDIDATE
+WHERE ELECTION.WINNER_LOSER_INDIC = 'W'
+GROUP BY PRESIDENT.PRES_NAME, PRESIDENT.YRS_SERV
 ```
 
 ## 63. แสดงรายชื่อประธานาธิบดีปีที่ดํารงตําแหน่งและจํานวนครั้งที่เคยแพ้ในการเลือกตั้ง
@@ -790,6 +824,32 @@ WHERE
 ## 84. แสดงรายชื่อและเปอร์เซ็นต์ของคะแนนเสียงของผู้ที่ชนะการเลือกตั้งจากคะแนนทั้งหมดที่มีการลงคะแนนเสียงจากการเลือกตั้งที่มีคะแนนเสียงมากที่สุดในตาราง
 
 ```sql
+SELECT MAIN.ELECTION_YEAR, MAIN.CANDIDATE, MAIN.VOTES , 
+
+( MAIN.VOTES  / 
+ 
+ ( SELECT MAX(SUM_VOTE)
+FROM 
+( SELECT  ELECTION.ELECTION_YEAR, SUM(ELECTION.VOTES) AS SUM_VOTE
+FROM ELECTION 
+GROUP BY ELECTION.ELECTION_YEAR ) AS TEMP ) 
+
+
+)  * 100 AS CAL_PERCENT
+
+
+FROM ELECTION AS MAIN
+WHERE MAIN.ELECTION_YEAR IN 
+( SELECT  ELECTION_YEAR
+FROM
+( SELECT  ELECTION.ELECTION_YEAR, SUM(ELECTION.VOTES) AS SUM_VOTE
+FROM ELECTION 
+GROUP BY ELECTION.ELECTION_YEAR ) AS SUMMARY
+WHERE SUMMARY.SUM_VOTE = ( SELECT MAX(SUM_VOTE)
+FROM 
+( SELECT  ELECTION.ELECTION_YEAR, SUM(ELECTION.VOTES) AS SUM_VOTE
+FROM ELECTION 
+GROUP BY ELECTION.ELECTION_YEAR ) AS TEMP ) ) AND MAIN.WINNER_LOSER_INDIC = 'W'
 ```
 
 ## 85. แสดงรายชื่อของประธานาธิบดีที่เคยเป็นรองประธานาธิบดี
@@ -831,7 +891,25 @@ WHERE NOT EXISTS (
 ## 88. แสดงชื่อประธานาธิบดีที่มีอายุในการแต่งงานครั้งแรก น้อยกว่าอายุเฉลี่ยในการแต่งงานครั้งแรกของประธานาธิบดีทั้งหมด
 
 ```sql
+SELECT MAIN.PRES_NAME
+FROM (
+  SELECT *
+  FROM PRES_MARRIAGE AS T1
+  WHERE 0 = (
+      SELECT COUNT(*)
+      FROM PRES_MARRIAGE AS T2
+      WHERE  T1.PRES_NAME = T2.PRES_NAME AND T1.MAR_YEAR < T2.MAR_YEAR 
+  )
+) AS MAIN
+WHERE MAIN.PR_AGE <
 
+( SELECT AVG(PR_AGE)
+FROM PRES_MARRIAGE AS T1
+WHERE 0 = (
+	SELECT COUNT(*)
+  	FROM PRES_MARRIAGE AS T2
+  	WHERE  T1.PRES_NAME = T2.PRES_NAME AND T1.MAR_YEAR < T2.MAR_YEAR 
+))
 ```
 
 ## 89. แสดงรายชื่อประธานาธิบดีที่มีจํานวนบุตรจากการแต่งงานครั้งแรกน้อยกว่าจํานวนงานอดิเรก

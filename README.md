@@ -12,6 +12,6 @@ mysql -u root -p -h mysql_address < init.sql
 
 คำถามที่ใช้กับ Database : President : https://dentnetcde.files.wordpress.com/2009/02/president_exercise.pdf
 
-เฉลย : https://dentnetcde.files.wordpress.com/2009/02/sql-solution.pdfs
+เฉลย : https://github.com/surapong-taotiamton/president_db/blob/master/answer.md
 
 ข้อมูล : http://www.cs.ru.nl/~gerp/IS0/dictaat/2_SQL_Structured_Query_Language.pdf
